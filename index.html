@@ -343,7 +343,10 @@ function showResult(granted, username, role, rank, requestedSC) {
       `ROLE &nbsp;&nbsp;&nbsp;: <span>${role}</span><br>` +
       `RANK &nbsp;&nbsp;&nbsp;: <span>${rank}</span><br>` +
       `CLEARED : <span>${requestedSC}</span>`;
+    sessionStorage.setItem('triton_rank', rank);
+    sessionStorage.setItem('triton_username', username);
     link.style.display = 'inline-block';
+    link.href = 'db.html';
   } else {
     box.className = 'result-box denied';
     title.textContent = 'ACCESS DENIED';
