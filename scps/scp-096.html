@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCP-096 — TRITON Anomaly Database</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #080909;
+    --surface: #0c0e0d;
+    --border:  #1a2218;
+    --border2: #243020;
+    --dim:     #2a3828;
+    --mid:     #3d5438;
+    --text:    #8aab7a;
+    --bright:  #b2cc9e;
+    --muted:   #3a4e34;
+    --warn:    #8a7a3a;
+    --err:     #8a3a3a;
+    --ok:      #5a9a3a;
+    --redact:  #1a1a1a;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100%;
+  }
+
+  body { padding: 2rem 1rem; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .nav {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+  .nav a { color: var(--mid); text-decoration: none; }
+  .nav a:hover { color: var(--text); }
+  .nav span { color: var(--dim); margin: 0 0.4rem; }
+
+  .scp-header {
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+  }
+
+  .scp-number {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+  }
+
+  .scp-name {
+    font-size: 20px;
+    color: var(--bright);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-size: 11px;
+  }
+
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { color: var(--dim); letter-spacing: 0.15em; }
+  .meta-value { color: var(--text); }
+  .meta-value.euclid { color: #8a7a3a; }
+  .meta-value.keter  { color: var(--err); }
+  .meta-value.safe   { color: var(--ok); }
+
+  .clearance-badge {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--mid);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    align-self: flex-start;
+    letter-spacing: 0.1em;
+  }
+
+  .section {
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+    background: var(--surface);
+  }
+
+  .section-header {
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.18em;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: #0a0c0a;
+  }
+
+  .section-header.warn { color: var(--warn); border-color: #2a2010; }
+
+  .section-body {
+    padding: 1rem;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  .redact-block {
+    display: block;
+    background: var(--redact);
+    color: var(--redact);
+    border-radius: 1px;
+    user-select: none;
+    min-height: 1.5rem;
+    margin: 0.4rem 0;
+    width: 100%;
+  }
+
+  .redact-line {
+    display: block;
+    background: var(--redact);
+    color: var(--redact);
+    border-radius: 1px;
+    user-select: none;
+    height: 1rem;
+    margin: 0.35rem 0;
+  }
+
+  .access-note {
+    font-size: 11px;
+    color: var(--err);
+    border: 1px solid #2a1010;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+    background: #0a0604;
+  }
+
+  .warning-box {
+    font-size: 11px;
+    color: var(--warn);
+    border: 1px solid #2a2010;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 1rem;
+    background: #0a0900;
+    letter-spacing: 0.05em;
+  }
+
+  .restrict-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .restrict-table th {
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-align: left;
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: normal;
+  }
+
+  .restrict-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .restrict-table tr:last-child td { border-bottom: none; }
+
+  .val-no   { color: var(--ok); }
+  .val-yes  { color: var(--err); }
+  .val-cond { color: var(--warn); }
+
+  .sc3-gate { display: none; }
+
+  .log-line {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+  .log-line .speaker { color: var(--text); }
+
+  .discovery-item {
+    font-size: 12px;
+    color: var(--text);
+    padding: 0.3rem 0;
+    border-bottom: 1px solid var(--border);
+    padding-left: 0.75rem;
+  }
+  .discovery-item::before {
+    content: '> ';
+    color: var(--mid);
+  }
+  .discovery-item:last-child { border-bottom: none; }
+
+  .doc-footer {
+    margin-top: 2rem;
+    font-size: 10px;
+    color: var(--border2);
+    letter-spacing: 0.15em;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="nav">
+    <a href="../db.html">TRITON DATABASE</a>
+    <span>/</span>
+    <a href="../sector-gamma-2.html">SECTOR GAMMA — SUB-SECTION 2</a>
+    <span>/</span>
+    SCP-096
+  </div>
+
+  <div class="scp-header">
+    <div class="scp-number">ITEM No. SCP-096 — SECTOR GAMMA, SUB-SECTION 2</div>
+    <div class="scp-name">"THE SHY GUY"</div>
+    <div class="meta-row">
+      <div class="meta-item">
+        <span class="meta-label">OBJECT CLASS</span>
+        <span class="meta-value euclid">EUCLID</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">CONTAINMENT ZONE</span>
+        <span class="meta-value">SECTOR GAMMA — SS2</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">STATUS</span>
+        <span class="meta-value ok">CONTAINED</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">SENTIENT</span>
+        <span class="meta-value">YES</span>
+      </div>
+      <div class="clearance-badge" id="clearance-badge">SC-0</div>
+    </div>
+  </div>
+
+  <!-- ANOMALY DESCRIPTION -->
+  <div class="section">
+    <div class="section-header">// ANOMALY DESCRIPTION</div>
+    <div class="section-body">
+      <div id="desc-sc0">
+        <span class="redact-block" style="width:95%">&nbsp;</span>
+        <span class="redact-block" style="width:80%">&nbsp;</span>
+        <span class="redact-block" style="width:88%">&nbsp;</span>
+        <span class="redact-block" style="width:65%">&nbsp;</span>
+        <div class="access-note">&gt; DESCRIPTION REQUIRES SC-1 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="desc-sc1" style="display:none">
+        <div class="warning-box">&gt; CAUTION — FACIAL EXPOSURE TO SCP-096 IS LETHAL. THIS DOCUMENT CONTAINS NO IMAGES OF SCP-096's FACE.</div>
+        SCP-096 is a humanoid entity measuring approximately 2.38 metres in height. Subject displays severe muscular atrophy consistent with prolonged malnutrition. Arms are grossly disproportionate — each measuring approximately 1.5 metres in length. Skin is entirely devoid of pigmentation. No body hair is present. SCP-096's jaw is capable of opening to four times the range of a standard human jaw. Eye pigmentation is absent. Whether SCP-096 is capable of sight is currently undetermined.<br><br>
+        Under undisturbed conditions, SCP-096 is entirely docile. Subject wanders aimlessly or remains stationary for extended periods. It exhibits no signs of higher cognitive function and does not acknowledge the presence of personnel. No sapience has been observed.<br><br>
+        <span id="desc-sc2-add" style="display:none">
+        SCP-096's primary anomalous property activates upon any direct or indirect viewing of its face — whether in person, via photograph, or video recording. Upon a viewing event, SCP-096 enters a state of severe emotional distress. It will cover its face with its hands and begin screaming, crying, and vocalising incoherently. After approximately one to two minutes, SCP-096 will begin pursuing the individual who viewed its face, designated SCP-096-1, regardless of distance or physical barriers. Upon reaching SCP-096-1, it will kill and [DATA EXPUNGED] them, leaving no recoverable remains. SCP-096 then returns to a docile state and attempts to return to its containment area.
+        </span>
+        <div id="desc-sc1-gate" class="access-note">&gt; FULL ANOMALOUS PROPERTIES REQUIRE SC-2 CLEARANCE OR ABOVE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINMENT PROCEDURES -->
+  <div class="section">
+    <div class="section-header">// SPECIAL CONTAINMENT PROCEDURES</div>
+    <div class="section-body">
+      <div id="contain-sc0">
+        <span class="redact-block">&nbsp;</span>
+        <span class="redact-block" style="width:80%">&nbsp;</span>
+        <span class="redact-block" style="width:90%">&nbsp;</span>
+        <div class="access-note">&gt; CONTAINMENT PROCEDURES REQUIRE SC-2 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="contain-sc2" style="display:none">
+        SCP-096 is contained within an airtight steel cube measuring 5m × 5m × 5m located in Sector Gamma Sub-Section 2 of Site Neptune. Chamber walls are constructed of reinforced ballistic steel no less than 25cm thick. Weekly integrity checks for cracks, breaches, or structural compromise are mandatory.<br><br>
+        No video surveillance or optical equipment of any kind is permitted inside the containment chamber. Monitoring is conducted exclusively via pressure sensors and laser detectors to confirm SCP-096's presence within the cell. Any photographs, recordings, or visual media that may capture SCP-096's face are strictly prohibited without authorisation from Scientific Department High Command.<br><br>
+        All personnel entering SCP-096's containment chamber for testing purposes must have a bag secured over SCP-096's head by Mobile Task Force Unit "Gamma-7" prior to entry. All personnel are to face away from SCP-096 upon any instruction from Gamma-7. If the bag becomes displaced, removed, or compromised in any way, all personnel are to immediately exit the chamber and seal the door. Do not look back.
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTING RESTRICTIONS -->
+  <div class="section">
+    <div class="section-header">// TESTING RESTRICTIONS</div>
+    <div class="section-body" style="padding:0">
+      <div id="restrict-sc0" style="padding:1rem">
+        <span class="redact-line" style="width:80%">&nbsp;</span>
+        <span class="redact-line" style="width:60%">&nbsp;</span>
+        <div class="access-note" style="margin-top:0.75rem">&gt; TESTING RESTRICTIONS REQUIRE SC-1 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="restrict-sc1" style="display:none">
+        <table class="restrict-table">
+          <thead>
+            <tr><th>FIELD</th><th>VALUE</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Subject Termination</td><td class="val-cond">CONDITIONAL</td></tr>
+            <tr><td>Base SD Required</td><td>2</td></tr>
+            <tr><td>Special Escort Required</td><td>Gamma-7 (1 Required)</td></tr>
+            <tr><td>Required Rank</td><td>Researcher</td></tr>
+            <tr><td>Required Authorisation</td><td>Adept Researcher</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREACH & RECONTAINMENT — SC3 GATE -->
+  <div class="section sc3-gate" id="breach-section">
+    <div class="section-header warn">// BREACH PROTOCOL & RECONTAINMENT — SC-3 RESTRICTED</div>
+    <div class="section-body">
+      <strong style="color:var(--warn);font-size:11px;">BREACH PROTOCOL — PROTOCOL 096-DELTA "SHY GUY"</strong><br><br>
+      In the event SCP-096 breaches containment, the following protocol is to be initiated immediately:<br><br>
+      All non-essential personnel are to evacuate the affected sector. Under no circumstances should any individual look directly at SCP-096's face during a breach. Any personnel who have already viewed SCP-096's face are designated SCP-096-1 and are to be isolated from other personnel where possible — this will not prevent SCP-096 from reaching them, but may reduce secondary casualties.<br><br>
+      Conventional weaponry is not to be used against SCP-096 during a breach — standard arms have demonstrated no meaningful effect on the entity and will not interrupt pursuit. Attempts to physically restrain SCP-096 during active pursuit are not authorised.<br><br>
+      <strong style="color:var(--warn);font-size:11px;">RECONTAINMENT PROTOCOL</strong><br><br>
+      Recontainment may only be attempted once SCP-096 has returned to a docile state — identifiable by cessation of vocalisation and the entity sitting or crouching in place. At this point, Gamma-7 units are to approach from behind and secure a bag over SCP-096's head. Once bagged, SCP-096 will stand and make its way back toward its containment chamber. Gamma-7 is to escort and guide subject back to the steel cube and reseal the chamber.<br><br>
+      Under no circumstances is any personnel to look at SCP-096's face during recontainment. The bag must remain secured until the chamber is sealed and confirmed intact.
+    </div>
+  </div>
+
+  <!-- RESEARCH LOG — SC3 GATE -->
+  <div class="section sc3-gate" id="research-section">
+    <div class="section-header">// RESEARCH LOG — LOG #004-A</div>
+    <div class="section-body">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:1rem;">
+        Site Neptune Research Document — Recorded XX/XX/2026<br>
+        Filed by: skirtsteak55 [SC-2, Entrant]<br>
+        Clearance: Security Clearance 2<br>
+        Sent to: Scientific Department High Command
+      </div>
+
+      <div style="color:var(--bright);font-size:11px;letter-spacing:0.1em;margin-bottom:0.5rem;">RESEARCH QUESTION</div>
+      <div style="font-size:12px;margin-bottom:1rem;">
+        Does SCP-096 possess any form of basic or superior intelligence, understanding of human speech, or ability for alternative communication? This represents the first documented attempt to establish communication and assess cognitive capability.
+      </div>
+
+      <div style="color:var(--bright);font-size:11px;letter-spacing:0.1em;margin-bottom:0.5rem;">HYPOTHESIS</div>
+      <div style="font-size:12px;margin-bottom:1rem;">
+        SCP-096 possesses no understanding of any form of human communication. It is incapable of responding meaningfully through speech, gesture, or other methods. This is supported by prior observations showing no acknowledgement of personnel outside of its triggered state.
+      </div>
+
+      <div style="color:var(--bright);font-size:11px;letter-spacing:0.1em;margin-bottom:0.5rem;">PROCEDURE</div>
+      <div style="font-size:12px;margin-bottom:1rem;">
+        Gamma-7 secured a bag over SCP-096's head prior to researcher entry. Researcher entered containment chamber and attempted verbal communication — simple words, tones, and questions. All personnel faced away from SCP-096 throughout. Loud stimuli including a fire extinguisher and a Gamma-7 rifle discharge were introduced during the test.
+      </div>
+
+      <div style="color:var(--bright);font-size:11px;letter-spacing:0.1em;margin-bottom:0.5rem;">RESULTS</div>
+      <div style="margin-bottom:1rem;">
+        <div class="discovery-item">SCP-096 demonstrated no response to verbal communication of any kind.</div>
+        <div class="discovery-item">SCP-096 displayed a visible physical reaction to loud sounds — a fire extinguisher and gunshots — attempting to move away from the source and cornering itself.</div>
+        <div class="discovery-item">Despite repeated loud stimuli, SCP-096 did not become aggressive and did not enter its triggered state.</div>
+        <div class="discovery-item">No evidence of cognitive awareness or understanding of human speech was observed.</div>
+        <div class="discovery-item">During the test, SCP-096 was presented with a photograph of its own face by a Gamma-7 unit while all personnel were outside the chamber. The unit reported that SCP-096 appeared to freeze briefly upon viewing the image before resuming prior behaviour. This was not anticipated and has not been previously documented.</div>
+      </div>
+
+      <div style="color:var(--bright);font-size:11px;letter-spacing:0.1em;margin-bottom:0.5rem;">CONCLUSION</div>
+      <div style="font-size:12px;margin-bottom:1rem;">
+        Results confirm the original hypothesis. SCP-096 demonstrated no understanding of human speech, no capacity for communication, and no cognitive response to personnel. Reactions to sound appear to be purely reflexive. No intelligence was observed.<br><br>
+        The self-image response — a momentary freeze upon viewing its own face — is an anomalous finding that warrants further controlled investigation. It may suggest a possible method of temporarily interrupting its triggered state, though this remains speculation and requires significant additional testing before any conclusions can be drawn.
+      </div>
+
+      <div style="font-size:11px;color:var(--dim);margin-top:0.5rem;">
+        Attachment 1: Researcher Body Camera — available on request (face excluded per protocol)<br>
+        Attachment 2: Transcript_96-A.log — CURRENTLY UNAVAILABLE
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <span>TRITON/SCPF/SITE-NEPTUNE — ANOMALY DATABASE</span>
+    <span>LAST MODIFIED: XX/XX/2026</span>
+  </div>
+
+</div>
+
+<script>
+const RANK_TO_SC = {
+  0: 0, 1: 0, 2: 0,
+  3: 0, 4: 1, 5: 2,
+  6: 3, 7: 4, 9: 5
+};
+
+function getSC() {
+  const rank = parseInt(sessionStorage.getItem('triton_rank') || '0');
+  return RANK_TO_SC[rank] ?? 0;
+}
+
+function applyRedaction() {
+  const sc = getSC();
+  document.getElementById('clearance-badge').textContent = 'SC-' + sc + ' ACCESS';
+
+  if (sc >= 1) {
+    document.getElementById('desc-sc0').style.display = 'none';
+    document.getElementById('desc-sc1').style.display = 'block';
+  }
+  if (sc >= 2) {
+    document.getElementById('desc-sc2-add').style.display = 'inline';
+    document.getElementById('desc-sc1-gate').style.display = 'none';
+    document.getElementById('contain-sc0').style.display = 'none';
+    document.getElementById('contain-sc2').style.display = 'block';
+  }
+  if (sc >= 1) {
+    document.getElementById('restrict-sc0').style.display = 'none';
+    document.getElementById('restrict-sc1').style.display = 'block';
+  }
+  if (sc >= 3) {
+    document.querySelectorAll('.sc3-gate').forEach(el => el.style.display = 'block');
+  }
+}
+
+const urlSC = new URLSearchParams(window.location.search).get('sc');
+if (urlSC !== null) {
+  const scToRank = { '0':3, '1':4, '2':5, '3':6, '4':7, '5':9 };
+  sessionStorage.setItem('triton_rank', scToRank[urlSC] || '3');
+}
+
+applyRedaction();
+</script>
+</body>
+</html>
