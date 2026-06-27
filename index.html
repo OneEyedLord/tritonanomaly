@@ -1,0 +1,34 @@
+# TRITON ANOMALY DATABASE
+
+SCP-themed auth page for Netlify. Checks a Roblox username against group 17194129 and validates clearance level.
+
+## Structure
+
+```
+triton-db/
+├── index.html                  # auth page
+├── netlify.toml                # redirects /api/* to netlify functions
+└── netlify/functions/
+    └── roblox.js               # serverless proxy for Roblox API
+```
+
+## Deploy
+
+1. Push this folder to a GitHub repo
+2. Go to netlify.com → Add new site → Import from Git
+3. Build command: leave blank
+4. Publish directory: `.` (root)
+5. Deploy
+
+That's it. The `/api/roblox` endpoint will work automatically via the Netlify function.
+
+## Clearance map (group 17194129)
+
+| SC Level | Required Rank | Role |
+|----------|--------------|------|
+| SC-0 | 3+ | Security Class 0+ |
+| SC-1 | 4+ | Security Class 1+ |
+| SC-2 | 5+ | Security Class 2+ |
+| SC-3 | 6+ | Security Class 3+ |
+| SC-4 | 7+ | Security Class 4+ |
+| SC-5 | 9+ | Site Director, Overseer, Administrator |
