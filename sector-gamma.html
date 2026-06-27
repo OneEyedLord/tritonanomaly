@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sector Gamma — TRITON Anomaly Database</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #080909;
+    --surface: #0c0e0d;
+    --border:  #1a2218;
+    --border2: #243020;
+    --dim:     #2a3828;
+    --mid:     #3d5438;
+    --text:    #8aab7a;
+    --bright:  #b2cc9e;
+    --muted:   #3a4e34;
+    --warn:    #8a7a3a;
+    --err:     #8a3a3a;
+    --ok:      #5a9a3a;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100%;
+  }
+
+  body { padding: 2rem 1rem; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .nav {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-left a { color: var(--mid); text-decoration: none; }
+  .nav-left a:hover { color: var(--text); }
+  .nav-left span { color: var(--dim); margin: 0 0.4rem; }
+
+  .nav-user { font-size: 10px; color: var(--dim); letter-spacing: 0.1em; }
+  .nav-user span { color: var(--muted); }
+
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-id {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+  }
+
+  .page-title {
+    font-size: 18px;
+    color: var(--bright);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-desc {
+    font-size: 11px;
+    color: var(--muted);
+    border-left: 2px solid var(--border);
+    padding-left: 0.75rem;
+    line-height: 1.8;
+  }
+
+  /* subsection links */
+  .subsection-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .subsection-link {
+    font-size: 11px;
+    color: var(--dim);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    text-decoration: none;
+    letter-spacing: 0.08em;
+  }
+
+  .subsection-link:hover { color: var(--text); border-color: var(--mid); }
+  .subsection-link.current { color: var(--text); border-color: var(--mid); background: #0f150d; }
+
+  .section-label {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.25em;
+    margin-bottom: 0.75rem;
+  }
+
+  /* anomaly list */
+  .anomaly-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    margin-bottom: 0.75rem;
+    display: flex;
+    text-decoration: none;
+    transition: border-color 0.15s;
+    overflow: hidden;
+  }
+
+  .anomaly-card:hover { border-color: var(--mid); }
+
+  .anomaly-img {
+    width: 90px;
+    min-height: 90px;
+    object-fit: cover;
+    object-position: center top;
+    flex-shrink: 0;
+    filter: brightness(0.7) saturate(0.8);
+    display: block;
+  }
+
+  .anomaly-img-placeholder {
+    width: 90px;
+    min-height: 90px;
+    flex-shrink: 0;
+    background: #0a0c0a;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  .anomaly-info {
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+  }
+
+  .anomaly-number {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+  }
+
+  .anomaly-name {
+    font-size: 13px;
+    color: var(--bright);
+    letter-spacing: 0.06em;
+  }
+
+  .anomaly-tags {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 10px;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .tag { color: var(--muted); letter-spacing: 0.1em; }
+  .tag-euclid { color: var(--warn); }
+  .tag-keter  { color: var(--err); }
+  .tag-safe   { color: var(--ok); }
+
+  .anomaly-blurb {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 0.35rem;
+    line-height: 1.6;
+  }
+
+  /* redacted card */
+  .anomaly-card.redacted { opacity: 0.5; pointer-events: none; }
+  .anomaly-card.redacted .anomaly-name { color: var(--dim); }
+
+  .redact-inline {
+    background: #1a1a1a;
+    color: #1a1a1a;
+    border-radius: 1px;
+    user-select: none;
+    padding: 0 3px;
+  }
+
+  .doc-footer {
+    margin-top: 2rem;
+    font-size: 10px;
+    color: var(--border2);
+    letter-spacing: 0.15em;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="nav">
+    <div class="nav-left">
+      <a href="db.html">TRITON DATABASE</a>
+      <span>/</span>
+      SECTOR GAMMA
+    </div>
+    <div class="nav-user">USER: <span id="nav-user">—</span> &nbsp;|&nbsp; <span id="nav-sc">SC-0</span></div>
+  </div>
+
+  <div class="page-header">
+    <div class="page-id">CONTAINMENT ZONE — SECTOR GAMMA</div>
+    <div class="page-title">SECTOR GAMMA</div>
+    <div class="page-desc">
+      Moderate containment zone. Houses Euclid-class anomalies requiring structured oversight.<br>
+      Sub-sections 1, 2, and 3 house progressively higher-threat classifications.
+    </div>
+  </div>
+
+  <div class="subsection-bar">
+    <a class="subsection-link current" href="sector-gamma.html">GAMMA (MAIN)</a>
+    <a class="subsection-link" href="sector-gamma-1.html">SUB-SECTION 1</a>
+    <a class="subsection-link" href="sector-gamma-2.html">SUB-SECTION 2</a>
+    <a class="subsection-link" href="sector-gamma-3.html">SUB-SECTION 3</a>
+  </div>
+
+  <div class="section-label">// ANOMALIES — SECTOR GAMMA (MAIN) &nbsp;<span id="count-label"></span></div>
+
+  <!-- SCP-082 -->
+  <a class="anomaly-card" href="scps/scp-082.html" id="card-082">
+    <img class="anomaly-img" src="scps/scp-082-img.png" alt="SCP-082">
+    <div class="anomaly-info">
+      <div class="anomaly-number">ITEM No. SCP-082</div>
+      <div class="anomaly-name">"FERNAND" / "FERN"</div>
+      <div class="anomaly-tags">
+        <span class="tag tag-euclid">EUCLID</span>
+        <span class="tag">SENTIENT</span>
+        <span class="tag">HUMANOID</span>
+        <span class="tag">CONTAINED</span>
+      </div>
+      <div class="anomaly-blurb" id="blurb-082">
+        Large humanoid entity of French origin. Amicable under standard conditions.
+      </div>
+    </div>
+  </a>
+
+  <!-- SCP-096 placeholder — page not yet available -->
+  <a class="anomaly-card" href="scps/scp-096.html" id="card-096">
+    <div class="anomaly-img-placeholder">NO IMG</div>
+    <div class="anomaly-info">
+      <div class="anomaly-number">ITEM No. SCP-096</div>
+      <div class="anomaly-name" id="name-096">"THE SHY GUY"</div>
+      <div class="anomaly-tags">
+        <span class="tag tag-euclid">EUCLID</span>
+        <span class="tag">SENTIENT</span>
+        <span class="tag">HUMANOID</span>
+        <span class="tag">CONTAINED</span>
+      </div>
+      <div class="anomaly-blurb" id="blurb-096">
+        Pale humanoid entity. Extreme threat response triggered by facial exposure.
+      </div>
+    </div>
+  </a>
+
+  <div class="doc-footer">
+    <span>TRITON/SCPF/SITE-NEPTUNE — ANOMALY DATABASE</span>
+    <span>SECTOR GAMMA</span>
+  </div>
+
+</div>
+
+<script>
+const rank = sessionStorage.getItem('triton_rank');
+if (rank === null) window.location.href = 'index.html';
+
+const RANK_TO_SC = { 0:0, 1:0, 2:0, 3:0, 4:1, 5:2, 6:3, 7:4, 9:5 };
+const r = parseInt(rank);
+const sc = RANK_TO_SC[r] ?? 0;
+const username = sessionStorage.getItem('triton_username') || '—';
+
+document.getElementById('nav-user').textContent = username;
+document.getElementById('nav-sc').textContent = 'SC-' + sc;
+
+// SC-0: redact blurbs and names
+if (sc === 0) {
+  document.getElementById('blurb-082').innerHTML = '<span class="redact-inline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>';
+  document.getElementById('blurb-096').innerHTML = '<span class="redact-inline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>';
+}
+</script>
+</body>
+</html>
