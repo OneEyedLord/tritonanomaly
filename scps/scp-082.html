@@ -1,1 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCP-082 — TRITON Anomaly Database</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #080909;
+    --surface: #0c0e0d;
+    --border:  #1a2218;
+    --border2: #243020;
+    --dim:     #2a3828;
+    --mid:     #3d5438;
+    --text:    #8aab7a;
+    --bright:  #b2cc9e;
+    --muted:   #3a4e34;
+    --warn:    #8a7a3a;
+    --err:     #8a3a3a;
+    --ok:      #5a9a3a;
+    --redact:  #1a1a1a;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100%;
+  }
+
+  body { padding: 2rem 1rem; }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  /* nav */
+  .nav {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+  .nav a { color: var(--mid); text-decoration: none; }
+  .nav a:hover { color: var(--text); }
+  .nav span { color: var(--dim); margin: 0 0.4rem; }
+
+  /* header block */
+  .scp-header {
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+  }
+
+  .scp-number {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+  }
+
+  .scp-name {
+    font-size: 20px;
+    color: var(--bright);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-size: 11px;
+  }
+
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { color: var(--dim); letter-spacing: 0.15em; }
+  .meta-value { color: var(--text); }
+  .meta-value.euclid { color: #8a7a3a; }
+  .meta-value.keter  { color: #8a3a3a; }
+  .meta-value.safe   { color: var(--ok); }
+
+  .clearance-badge {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--mid);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    align-self: flex-start;
+    letter-spacing: 0.1em;
+  }
+
+  /* sections */
+  .section {
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+    background: var(--surface);
+  }
+
+  .section-header {
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.18em;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: #0a0c0a;
+  }
+
+  .section-body {
+    padding: 1rem;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  /* redaction */
+  .redact {
+    display: inline-block;
+    background: var(--redact);
+    color: var(--redact);
+    border-radius: 1px;
+    user-select: none;
+    letter-spacing: 0;
+    padding: 0 2px;
+  }
+
+  .redact-block {
+    display: block;
+    background: var(--redact);
+    color: var(--redact);
+    border-radius: 1px;
+    user-select: none;
+    min-height: 1.5rem;
+    margin: 0.4rem 0;
+    width: 100%;
+  }
+
+  .redact-line {
+    display: block;
+    background: var(--redact);
+    color: var(--redact);
+    border-radius: 1px;
+    user-select: none;
+    height: 1rem;
+    margin: 0.35rem 0;
+  }
+
+  .access-note {
+    font-size: 11px;
+    color: var(--err);
+    border: 1px solid #2a1010;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+    background: #0a0604;
+  }
+
+  /* testing restrictions table */
+  .restrict-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .restrict-table th {
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-align: left;
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: normal;
+  }
+
+  .restrict-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .restrict-table tr:last-child td { border-bottom: none; }
+
+  .val-no   { color: var(--ok); }
+  .val-yes  { color: var(--err); }
+  .val-cond { color: var(--warn); }
+
+  /* outfits */
+  .outfit-entry {
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 0;
+  }
+  .outfit-entry:first-child { border-top: none; padding-top: 0; }
+  .outfit-name { color: var(--bright); font-size: 12px; margin-bottom: 0.25rem; }
+  .outfit-desc { font-size: 12px; color: var(--text); }
+
+  /* addendum */
+  .addendum-header {
+    font-size: 11px;
+    color: var(--warn);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+  }
+
+  .log-line {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+  .log-line .speaker { color: var(--text); }
+
+  /* sc3 gate */
+  .sc3-gate { display: none; }
+
+  /* footer */
+  .doc-footer {
+    margin-top: 2rem;
+    font-size: 10px;
+    color: var(--border2);
+    letter-spacing: 0.15em;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="nav">
+    <a href="../db.html">TRITON DATABASE</a>
+    <span>/</span>
+    <a href="../sector-gamma.html">SECTOR GAMMA</a>
+    <span>/</span>
+    SCP-082
+  </div>
+
+  <div class="scp-header">
+    <div class="scp-number">ITEM No. SCP-082 — SECTOR GAMMA, SUB-SECTION 1</div>
+    <div class="scp-name">"FERNAND" / "FERN"</div>
+    <div class="meta-row">
+      <div class="meta-item">
+        <span class="meta-label">OBJECT CLASS</span>
+        <span class="meta-value euclid">EUCLID</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">CONTAINMENT ZONE</span>
+        <span class="meta-value">SECTOR GAMMA</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">STATUS</span>
+        <span class="meta-value ok">CONTAINED</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">SENTIENT</span>
+        <span class="meta-value">YES</span>
+      </div>
+      <div class="clearance-badge" id="clearance-badge">SC-0</div>
+    </div>
+  </div>
+
+  <!-- ANOMALY DESCRIPTION -->
+  <div class="section">
+    <div class="section-header">// ANOMALY DESCRIPTION</div>
+    <div class="section-body" id="desc-body">
+      <!-- SC-0 -->
+      <div id="desc-sc0">
+        <span class="redact-block" style="width:90%">&nbsp;</span>
+        <span class="redact-block" style="width:75%">&nbsp;</span>
+        <span class="redact-block" style="width:85%">&nbsp;</span>
+        <span class="redact-block" style="width:60%">&nbsp;</span>
+        <div class="access-note">&gt; DESCRIPTION REQUIRES SC-1 CLEARANCE OR ABOVE</div>
+      </div>
+      <!-- SC-1+ -->
+      <div id="desc-sc1" style="display:none">
+        SCP-082 is a large humanoid entity of French origin, standing approximately 2.4 metres in height and bearing a distinctly green skin tone inconsistent with standard human biology. Subject is significantly overweight while simultaneously possessing abnormal muscle mass. Physical examination has been largely inconclusive — muscle density renders standard imaging difficult, and embedded foreign materials including ballistic fragments have been confirmed throughout soft tissue, consistent with prolonged suppression attempts. SCP-082 possesses exceptional physical strength, capable of lifting and projecting standard human personnel with minimal effort. Its jaw structure allows for full consumption of a human subject in a small number of bites.<br><br>
+        Under typical conditions, SCP-082 presents as cordial, outgoing, and conversational. It maintains a strong sense of personal dignity and will frequently invite personnel to tea parties or social gatherings within its containment chamber. SCP-082 refers to those it considers associates using food-related nicknames. Subject speaks fluent French and heavily accented English, typically through clenched teeth — SCP-082 only opens its jaw fully to consume food or to sing.<br><br>
+        Subject is prone to fabricating personal history and adopts various character personas — referred to internally as <span id="outfits-inline-label">"outfits"</span> — through which it behaves in accordance with the assumed role. <span id="desc-sc2-addition" style="display:none">SCP-082 becomes hostile when it or those it considers associates are insulted, or when referred to by any name other than "Fern" or "Fernand." Hostile escalation is marked by reddening of the eyes. At this stage, subject will attempt to physically assault the offending individual through strikes, throws, or consumption. Attacks are otherwise unpredictable and may occur without discernible motivation.</span>
+        <div id="desc-sc1-gate" class="access-note">&gt; FULL BEHAVIOURAL PROFILE REQUIRES SC-2 CLEARANCE OR ABOVE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINMENT PROCEDURES -->
+  <div class="section">
+    <div class="section-header">// SPECIAL CONTAINMENT PROCEDURES</div>
+    <div class="section-body">
+      <div id="contain-sc0">
+        <span class="redact-block" style="width:100%">&nbsp;</span>
+        <span class="redact-block" style="width:88%">&nbsp;</span>
+        <span class="redact-block" style="width:70%">&nbsp;</span>
+        <div class="access-note">&gt; CONTAINMENT PROCEDURES REQUIRE SC-2 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="contain-sc2" style="display:none">
+        SCP-082 is contained within Sector Gamma of Site Neptune in a modified Standard Secure Humanoid Containment Chamber constructed to resemble a medieval French nobleman's estate. The chamber includes a dining room, bedroom, living area, and courtyard. The exterior of the chamber houses an AETV, entry vestibule, and maintenance area.<br><br>
+        Subject operates under the belief that it holds a position of French nobility and that Site Neptune constitutes its royal estate. This deception is to be maintained by all interacting staff at all times. Address subject only as <strong style="color:var(--bright)">"Fern"</strong> or <strong style="color:var(--bright)">"Fernand"</strong> — failure to do so constitutes a Class-2 safety incident.<br><br>
+        SCP-082 is permitted limited free-roam access at the discretion of on-duty SC-3 or above personnel. Housekeeping functions within the chamber are to be carried out by Class-D personnel only. Security staff are not to engage SCP-082 in direct conversation unless operationally necessary.
+      </div>
+    </div>
+  </div>
+
+  <!-- TESTING RESTRICTIONS -->
+  <div class="section">
+    <div class="section-header">// TESTING RESTRICTIONS</div>
+    <div class="section-body" style="padding: 0;">
+      <div id="restrict-sc0" style="padding:1rem">
+        <span class="redact-line" style="width:80%">&nbsp;</span>
+        <span class="redact-line" style="width:65%">&nbsp;</span>
+        <div class="access-note" style="margin-top:0.75rem">&gt; TESTING RESTRICTIONS REQUIRE SC-1 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="restrict-sc1" style="display:none">
+        <table class="restrict-table">
+          <thead>
+            <tr>
+              <th>FIELD</th>
+              <th>VALUE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Subject Termination</td><td class="val-no">NO</td></tr>
+            <tr><td>Base SD Required</td><td>1</td></tr>
+            <tr><td>Special Escort Required</td><td>Replaceable G-7 (1)</td></tr>
+            <tr><td>Required Rank</td><td>Junior Researcher</td></tr>
+            <tr><td>Required Authorisation</td><td>N/A</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWN OUTFITS / PERSONAS -->
+  <div class="section">
+    <div class="section-header">// KNOWN PERSONAS</div>
+    <div class="section-body">
+      <div id="outfits-sc0">
+        <span class="redact-block">&nbsp;</span>
+        <div class="access-note">&gt; PERSONA RECORDS REQUIRE SC-2 CLEARANCE OR ABOVE</div>
+      </div>
+      <div id="outfits-sc2" style="display:none">
+        <div class="outfit-entry">
+          <div class="outfit-name">Napoleon Fernaparte — "The General"</div>
+          <div class="outfit-desc">SCP-082 presents as a French military general, narrating fabricated accounts of campaigns. Will occasionally recruit Class-D and Foundation personnel into formations and lead them on patrols.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Chef Ferdinand — "The Chef"</div>
+          <div class="outfit-desc">SCP-082 presents as a qualified culinary professional. Will gather nearby personnel and escort them to the cafeteria to host what it describes as a cooking demonstration.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Dr. Fernestein — "The Mad Scientist"</div>
+          <div class="outfit-desc">SCP-082 presents as a scientist, hosting tests with absurd hypotheses. Will voluntarily spectate legitimate Scientific Department procedures.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Monsieur Fernando — "The Billionaire"</div>
+          <div class="outfit-desc">SCP-082 presents as an arrogant aristocrat. Will host tea parties exclusively for personnel it deems "of sufficient status" — typically SC-3 and above. Will dismiss lower-ranked personnel.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">The Great Fernando — "The Wizard"</div>
+          <div class="outfit-desc">SCP-082 presents as a powerful sorcerer, performing elaborate rituals it claims to be genuine magic. Will host "sorcery shows" for gathered personnel.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Detective Ferlock — "The Detective"</div>
+          <div class="outfit-desc">SCP-082 presents as a renowned investigator. Will identify "cases" among personnel — thievery, trespassing, rule violations — and either hand suspects to security or resolve them personally.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Fernie — "The Tourist"</div>
+          <div class="outfit-desc">SCP-082 presents as a visiting civilian and will conduct impromptu tours of Site Neptune, renaming areas. Known aliases include: Sector Gamma → "Le Restaurant Des Oranges", Sector Epsilon → "The Zoo".</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Captain Fern — "The Pirate"</div>
+          <div class="outfit-desc">SCP-082 presents as a sea captain in search of treasure. Will attempt to recruit a crew from available personnel for what it describes as maritime adventures.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Sheriff Fern — "The Sheriff"</div>
+          <div class="outfit-desc">SCP-082 presents as a frontier lawman. Refers to Site Neptune as "his town" and Class-D personnel as "outlaws." Makes frequent use of Western vernacular and greatly exaggerates personal accounts.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Santa Fern — "Father Christmas"</div>
+          <div class="outfit-desc">SCP-082 presents as Father Christmas. Will attempt to recruit personnel as elves. Seasonal occurrence — typically observed during December.</div>
+        </div>
+        <div class="outfit-entry">
+          <div class="outfit-name">Fernstein — "Frankenstein's Monster"</div>
+          <div class="outfit-desc">SCP-082 claims to be a creation of SCP-049, cured and given life. Behaviour largely mirrors standard SCP-082 conduct with added references to its alleged "creation." NOTE: This persona appears to reflect genuine belief on SCP-082's part.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREACH & RECONTAINMENT -->
+  <div class="section sc3-gate" id="breach-section">
+    <div class="section-header">// BREACH PROTOCOL & RECONTAINMENT — SC-3 RESTRICTED</div>
+    <div class="section-body">
+      <strong style="color:var(--warn);font-size:11px;">BREACH PROTOCOL</strong><br><br>
+      In the event SCP-082 exits its containment chamber without authorisation, the following applies:<br><br>
+      Standard weapons are largely ineffective against SCP-082 and direct confrontation is to be avoided. Mobile Task Force units are to locate subject and reestablish the French nobility deception immediately. SCP-082 is to be guided back toward its containment chamber under the premise of returning to its royal estate.<br><br>
+      Under no circumstances is SCP-082 to be referred to by any name other than "Fern" or "Fernand" during a breach event. Personnel encountering a hostile SCP-082 — identifiable by red eye colouration — must maintain a minimum distance and await MTF arrival. Do not attempt recontainment alone.<br><br>
+      <strong style="color:var(--warn);font-size:11px;">RECONTAINMENT PROTOCOL</strong><br><br>
+      Recontainment is to be led by on-duty Gamma-7 units. Upon successful de-escalation, SCP-082 is to be escorted back to its chamber. The deception narrative should be reinforced — reference the estate, its status, and suggest that the excursion was a sanctioned visit. A post-breach welfare check by a Junior Researcher or above is recommended within 24 hours to assess subject's emotional state and stability.
+    </div>
+  </div>
+
+  <!-- ADDENDUM -->
+  <div class="section sc3-gate" id="addendum-section">
+    <div class="section-header">// ADDENDUM — INTERVIEW LOG #003-B</div>
+    <div class="section-body">
+      <div class="addendum-header">TRITON CHANNEL — INTERNAL COMMUNICATIONS</div>
+      <div style="font-size:11px; color:var(--muted); margin-bottom:1rem;">
+        Addendum [1.1-B] — Transcript of LOG #003-B. Intercepted and filed by ██████ ███.
+      </div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> I'll proceed with the questions myself.</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Right, just to start off, how are you today?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> I am fine, researcher.</div>
+      <div class="log-line"><span class="speaker">&lt;███&gt;</span> 082 can be seen moving away from the body camera, towards a corner of his room. He comes back towards the researcher.</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> How rude! I do apologize.</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Hm? It's quite alright.</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Has anything been bothering you lately?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> I am quite alright, researcher.</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Hm.. I heard some time ago, you had an incident, do you recall it?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> What incident?</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Something about a material?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> I do not recall anything of notability! Nothing of the sorts!</div>
+      <div class="log-line"><span class="speaker">&lt;O5-2&gt;</span> Fern. What happened to your jaw?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> Nothing, constable. I am quite alright.</div>
+      <div class="log-line"><span class="speaker">&lt;O5-2&gt;</span> Constable? Are you disassociated?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> I am fine! Are you implying I am unwell?</div>
+      <div class="log-line"><span class="speaker">&lt;O5-2&gt;</span> What do you see here?</div>
+      <div class="log-line"><span class="speaker">&lt;skirtsteak55&gt;</span> Well.. A barrel with a radioactive symbol?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> That is a lamp! Do not worry about it!</div>
+      <div class="log-line"><span class="speaker">&lt;O5-2&gt;</span> Since when is water black?</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> It is the floor! You see the dark floor below it!</div>
+      <div class="log-line"><span class="speaker">&lt;███&gt;</span> At this point is where his eyes turn red, and the test is terminated.</div>
+      <div class="log-line"><span class="speaker">&lt;SCP-082&gt;</span> Get out! Now!</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:1rem;">** END OF LOG **</div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <span>TRITON/SCPF/SITE-NEPTUNE — ANOMALY DATABASE</span>
+    <span>LAST MODIFIED: XX/XX/2026</span>
+  </div>
+
+</div>
+
+<script>
+const RANK_TO_SC = {
+  0: 0, 1: 0, 2: 0,
+  3: 0, 4: 1, 5: 2,
+  6: 3, 7: 4, 9: 5
+};
+
+function getSC() {
+  const rank = parseInt(sessionStorage.getItem('triton_rank') || '0');
+  const sc = RANK_TO_SC[rank] ?? 0;
+  return sc;
+}
+
+function applyRedaction() {
+  const sc = getSC();
+
+  document.getElementById('clearance-badge').textContent = 'SC-' + sc + ' ACCESS';
+
+  // Description
+  if (sc >= 1) {
+    document.getElementById('desc-sc0').style.display = 'none';
+    document.getElementById('desc-sc1').style.display = 'block';
+  }
+  if (sc >= 2) {
+    document.getElementById('desc-sc2-addition').style.display = 'inline';
+    document.getElementById('desc-sc1-gate').style.display = 'none';
+  }
+
+  // Containment
+  if (sc >= 2) {
+    document.getElementById('contain-sc0').style.display = 'none';
+    document.getElementById('contain-sc2').style.display = 'block';
+  }
+
+  // Testing restrictions
+  if (sc >= 1) {
+    document.getElementById('restrict-sc0').style.display = 'none';
+    document.getElementById('restrict-sc1').style.display = 'block';
+  }
+
+  // Personas
+  if (sc >= 2) {
+    document.getElementById('outfits-sc0').style.display = 'none';
+    document.getElementById('outfits-sc2').style.display = 'block';
+  }
+
+  // Breach + addendum
+  if (sc >= 3) {
+    document.querySelectorAll('.sc3-gate').forEach(el => el.style.display = 'block');
+  }
+}
+
+// For testing in browser without auth, check URL param too
+// e.g. scp-082.html?sc=3
+const urlSC = new URLSearchParams(window.location.search).get('sc');
+if (urlSC !== null) {
+  // map sc level back to a rank for testing
+  const scToRank = { '0':3, '1':4, '2':5, '3':6, '4':7, '5':9 };
+  sessionStorage.setItem('triton_rank', scToRank[urlSC] || '3');
+}
+
+applyRedaction();
+</script>
+</body>
+</html>
