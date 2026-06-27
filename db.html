@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRITON — Anomaly Database</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #080909;
+    --surface: #0c0e0d;
+    --border:  #1a2218;
+    --border2: #243020;
+    --dim:     #2a3828;
+    --mid:     #3d5438;
+    --text:    #8aab7a;
+    --bright:  #b2cc9e;
+    --muted:   #3a4e34;
+    --warn:    #8a7a3a;
+    --err:     #8a3a3a;
+    --ok:      #5a9a3a;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 100%;
+  }
+
+  body { padding: 2rem 1rem; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  /* header */
+  .site-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .site-id { font-size: 10px; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 0.2rem; }
+  .site-title { font-size: 16px; color: var(--bright); letter-spacing: 0.1em; }
+
+  .session-info {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .session-info .sc-level { color: var(--text); }
+  .session-info .username { color: var(--text); }
+
+  .logout {
+    font-size: 10px;
+    color: var(--dim);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    letter-spacing: 0.1em;
+    display: inline-block;
+    margin-top: 0.25rem;
+  }
+
+  .logout:hover { color: var(--err); border-color: #3a1a1a; }
+
+  /* welcome block */
+  .welcome {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .welcome .line { color: var(--text); }
+
+  /* sector grid */
+  .section-label {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.25em;
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .sector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 480px) { .sector-grid { grid-template-columns: 1fr; } }
+
+  .sector-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1rem;
+    text-decoration: none;
+    display: block;
+    transition: border-color 0.15s;
+  }
+
+  .sector-card:hover { border-color: var(--mid); }
+
+  .sector-card-id {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.25rem;
+  }
+
+  .sector-card-name {
+    font-size: 13px;
+    color: var(--bright);
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .sector-card-meta {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .sector-card-meta span { color: var(--text); }
+
+  .sector-card-counts {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 1rem;
+    font-size: 10px;
+  }
+
+  .count-safe   { color: var(--ok); }
+  .count-euclid { color: var(--warn); }
+  .count-keter  { color: var(--err); }
+
+  /* stats bar */
+  .stats-bar {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.75rem 1rem;
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+
+  .stat-item { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { color: var(--dim); letter-spacing: 0.15em; font-size: 10px; }
+  .stat-value { color: var(--text); }
+
+  /* footer */
+  .doc-footer {
+    margin-top: 2rem;
+    font-size: 10px;
+    color: var(--border2);
+    letter-spacing: 0.15em;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="site-bar">
+    <div>
+      <div class="site-id">TRITON/SCPF/SITE-NEPTUNE — NODE 4.1</div>
+      <div class="site-title">TRITON ANOMALY DATABASE</div>
+    </div>
+    <div class="session-info">
+      <div>USER: <span class="username" id="session-user">—</span></div>
+      <div>CLEARANCE: <span class="sc-level" id="session-sc">SC-0</span></div>
+      <div>ROLE: <span id="session-role">—</span></div>
+      <a class="logout" href="index.html" onclick="sessionStorage.clear()">LOGOUT</a>
+    </div>
+  </div>
+
+  <div class="welcome">
+    <span class="line">SYS &gt; Welcome to the TRITON Anomaly Database.</span><br>
+    Access is restricted to Site Neptune personnel. All activity is logged and monitored.<br>
+    Select a containment sector below to view its anomaly index.<br>
+    Content visibility is determined by your active clearance level.
+  </div>
+
+  <div class="section-label">// CONTAINMENT SECTORS</div>
+
+  <div class="sector-grid">
+
+    <a class="sector-card" href="sector-iota.html">
+      <div class="sector-card-id">SECTOR — IOTA</div>
+      <div class="sector-card-name">SECTOR IOTA</div>
+      <div class="sector-card-meta">
+        Light containment zone.<br>
+        Low-to-moderate threat anomalies.
+      </div>
+      <div class="sector-card-counts">
+        <span class="count-safe">SAFE ×7</span>
+        <span class="count-euclid">EUCLID ×1</span>
+        <span class="count-keter">KETER ×0</span>
+      </div>
+    </a>
+
+    <a class="sector-card" href="sector-gamma.html">
+      <div class="sector-card-id">SECTOR — GAMMA</div>
+      <div class="sector-card-name">SECTOR GAMMA</div>
+      <div class="sector-card-meta">
+        Moderate containment zone.<br>
+        Euclid-class primary housing.
+      </div>
+      <div class="sector-card-counts">
+        <span class="count-safe">SAFE ×0</span>
+        <span class="count-euclid">EUCLID ×2</span>
+        <span class="count-keter">KETER ×0</span>
+      </div>
+    </a>
+
+    <a class="sector-card" href="sector-gamma-1.html">
+      <div class="sector-card-id">SECTOR — GAMMA / SS-1</div>
+      <div class="sector-card-name">SECTOR GAMMA — SUB-SECTION 1</div>
+      <div class="sector-card-meta">
+        Moderate containment zone.<br>
+        Mixed classification housing.
+      </div>
+      <div class="sector-card-counts">
+        <span class="count-safe">SAFE ×1</span>
+        <span class="count-euclid">EUCLID ×1</span>
+        <span class="count-keter">KETER ×0</span>
+      </div>
+    </a>
+
+    <a class="sector-card" href="sector-gamma-2.html">
+      <div class="sector-card-id">SECTOR — GAMMA / SS-2</div>
+      <div class="sector-card-name">SECTOR GAMMA — SUB-SECTION 2</div>
+      <div class="sector-card-meta">
+        Heavy containment zone.<br>
+        High-threat and Keter-class housing.
+      </div>
+      <div class="sector-card-counts">
+        <span class="count-safe">SAFE ×0</span>
+        <span class="count-euclid">EUCLID ×4</span>
+        <span class="count-keter">KETER ×2</span>
+      </div>
+    </a>
+
+    <a class="sector-card" href="sector-gamma-3.html">
+      <div class="sector-card-id">SECTOR — GAMMA / SS-3</div>
+      <div class="sector-card-name">SECTOR GAMMA — SUB-SECTION 3</div>
+      <div class="sector-card-meta">
+        Maximum containment zone.<br>
+        Extreme-threat Keter-class housing.
+      </div>
+      <div class="sector-card-counts">
+        <span class="count-safe">SAFE ×1</span>
+        <span class="count-euclid">EUCLID ×0</span>
+        <span class="count-keter">KETER ×3</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-label">TOTAL ANOMALIES</span>
+      <span class="stat-value">23</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">SAFE</span>
+      <span class="stat-value count-safe">9</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">EUCLID</span>
+      <span class="stat-value count-euclid">9</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">KETER</span>
+      <span class="stat-value count-keter">5</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">SITE</span>
+      <span class="stat-value">NEPTUNE</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">NODE</span>
+      <span class="stat-value">4.1</span>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <span>TRITON/SCPF/SITE-NEPTUNE — ANOMALY DATABASE</span>
+    <span>ALL SESSIONS LOGGED</span>
+  </div>
+
+</div>
+
+<script>
+// redirect to auth if no session
+const rank = sessionStorage.getItem('triton_rank');
+if (rank === null) {
+  window.location.href = 'index.html';
+}
+
+const RANK_TO_SC = { 0:0, 1:0, 2:0, 3:0, 4:1, 5:2, 6:3, 7:4, 9:5 };
+const RANK_TO_ROLE = {
+  0: 'Guest', 1: 'Member', 2: 'Class-D', 3: 'Security Class 0',
+  4: 'Security Class 1', 5: 'Security Class 2', 6: 'Security Class 3',
+  7: 'Security Class 4', 9: 'Site Director'
+};
+
+const r = parseInt(rank);
+const sc = RANK_TO_SC[r] ?? 0;
+const role = RANK_TO_ROLE[r] ?? 'Unknown';
+const username = sessionStorage.getItem('triton_username') || '—';
+
+document.getElementById('session-user').textContent = username;
+document.getElementById('session-sc').textContent = 'SC-' + sc;
+document.getElementById('session-role').textContent = role;
+</script>
+</body>
+</html>
